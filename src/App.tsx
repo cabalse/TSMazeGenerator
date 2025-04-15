@@ -1,20 +1,22 @@
-export class MazeCell {
-  constructor(
-    public id: string,
-    public set: number,
-    public rightWall: boolean = false,
-    public bottomWall: boolean = false
-  ) {}
-}
+import { useEffect, useState } from "react";
+
+const MAZE_SQUARE = "w-4 h-4";
+
+type MazeCell = {
+  id: string;
+  set: number;
+  rightWall: boolean;
+  bottomWall: boolean;
+};
 
 function addWall(): boolean {
-  let rnd = Math.floor(Math.random() * 10) + 1;
+  const rnd = Math.floor(Math.random() * 10) + 1;
   return rnd > 5;
 }
 
 function getCellToRight(row: MazeCell[], cell: MazeCell): MazeCell | null {
   for (let columnIndex = 0; columnIndex < row.length; columnIndex++) {
-    let mazeCell = row[columnIndex];
+    const mazeCell = row[columnIndex];
     if (mazeCell.id === cell.id) {
       if (columnIndex === row.length) {
         return null;
@@ -111,41 +113,42 @@ function createEmptyRow(
   unUsedSet: number
 ): [MazeCell[], number] {
   let set = unUsedSet;
-  let row = [];
+  const row = [];
   for (let index = 0; index < columns; index++) {
-    let id = String(rowNr) + index;
-    let cell = new MazeCell(id, set++, false);
+    const id = String(rowNr) + index;
+    const cell = { id, set: set++, rightWall: false, bottomWall: false };
     row.push(cell);
   }
   return [row, set];
 }
 
 function copyRow(row: MazeCell[], rowNr: number): MazeCell[] {
-  let ret: MazeCell[] = [];
+  const ret: MazeCell[] = [];
   let id = 0;
   row.forEach((cell) => {
-    ret.push(
-      new MazeCell(
-        String(rowNr) + id++,
-        cell.set,
-        cell.rightWall,
-        cell.bottomWall
-      )
-    );
+    const obj: MazeCell = {
+      id: `${rowNr}${id++}`,
+      set: cell.set,
+      rightWall: cell.rightWall,
+      bottomWall: cell.bottomWall,
+    };
+
+    ret.push(obj);
   });
+
   return ret;
 }
 
 function addRightWallsToRowCells(row: MazeCell[]): void {
   row.forEach((currentCell) => {
-    let cellToTheRight = getCellToRight(row, currentCell);
+    const cellToTheRight = getCellToRight(row, currentCell);
     if (!cellToTheRight) {
       // no cell to the right
     } else {
       if (cellToTheRight.set === currentCell.set) {
         currentCell.rightWall = true;
       } else {
-        let add = addWall();
+        const add = addWall();
         if (add) {
           currentCell.rightWall = true;
         } else {
@@ -158,7 +161,7 @@ function addRightWallsToRowCells(row: MazeCell[]): void {
 
 function addBottomWallsToRowCells(row: MazeCell[]): void {
   row.forEach((currentCell) => {
-    let numberInSet = numberOfCellsForSet(row, currentCell.set);
+    const numberInSet = numberOfCellsForSet(row, currentCell.set);
     if (numberInSet > 1) {
       if (anyOtherCellWithoutBottomWallInSet(row, currentCell)) {
         if (addWall()) currentCell.bottomWall = true;
@@ -186,7 +189,7 @@ function removeWallsBetweenDifferentSetsAndUnion(row: MazeCell[]): void {
   });
 }
 
-export function generateMaze(rows: number, columns: number): MazeCell[][] {
+function generateMaze(rows: number, columns: number): MazeCell[][] {
   let maze: MazeCell[][] = [];
   let unUsedSet = 1;
 
@@ -203,3 +206,40 @@ export function generateMaze(rows: number, columns: number): MazeCell[][] {
 
   return maze;
 }
+
+const App = () => {
+  const [maze, setMaze] = useState<MazeCell[][]>([]);
+
+  useEffect(() => {
+    const mazeStructure = generateMaze(20, 20);
+    setMaze(mazeStructure);
+  }, []);
+
+  return (
+    <>
+      <div className="w-screen h-screen flex flex-col items-center justify-center">
+        <div className="p-6 text-white bg-slate-600 rounded-lg shadow-lg">
+          <div className="text-center">MAZE Generator</div>
+          <div className="italic text-center">Eller's Algorithm</div>
+          <div className="mt-4">
+            <div className="flex flex-col">
+              {maze.map((row, rowIndex) => (
+                <div key={rowIndex} className="flex flex-row">
+                  {row.map((mazeElement) => (
+                    <div
+                      className={`${MAZE_SQUARE} ${
+                        mazeElement.rightWall ? "border-r-2" : ""
+                      } ${mazeElement.bottomWall ? "border-b-2" : ""}`}
+                    ></div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default App;
